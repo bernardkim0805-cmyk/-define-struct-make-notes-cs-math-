@@ -6,7 +6,7 @@ class Note:
     title: str
     body: str
     tags: list[str] = field(default_factory = list)
-    created_on: date = field(default_factory = date.today)
+    last_edited: date = field(default_factory = date.today)
 
 
 
@@ -16,7 +16,7 @@ def add_note(nb: list[Note], note: Note) -> list[Note]:
 
 def find_note(nb: list[Note], text: str) -> list[Note]:
     return [x for x in nb if text in x.title or 
-            text in x.body or text in x.tags or text in str(x.created_on)]
+            text in x.body or text in x.tags or text in str(x.last_edited)]
 
 def delete_note(nb: list[Note], note: Note) -> list[Note]:
     return [x for x in nb if x != note]
@@ -31,11 +31,11 @@ def sort_notes(nb: list[Note], key: str) -> list[Note]:
     if key == "title":
         return sorted(nb, key=lambda x: x.title)
     elif key == "date":
-        return sorted(nb, key=lambda x: x.created_on)
-    elif key == "created_on":
-        return sorted(nb, key = lambda x: x.created_on)
+        return sorted(nb, key=lambda x: x.last_edited)
+    elif key == "last_edited":
+        return sorted(nb, key = lambda x: x.last_edited)
     else:
-        raise ValueError("Invalid key. Must be 'title', 'date', or 'created_on'")
+        raise ValueError("Invalid key. Must be 'title', 'date', or 'last_edited'")
     
 
 def add_notes(nb: list[Note], notes: list[Note]) -> list[Note]:
