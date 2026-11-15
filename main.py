@@ -2,6 +2,16 @@ from notes import *
 from storage import load, save
 from pathlib import Path
 
+def read_multi_line(prompt: str) -> str:
+    print(prompt + " (end with a line containing only .)")
+    lines = []
+    while True:
+        line = input()
+        if line == ".":
+            break
+        lines.append(line)
+    return "\n".join(lines)
+
 # interface 
 
 Notes_file = Path.home() / "MathCSnotes" / "notes.json"
@@ -15,7 +25,7 @@ while True:
         break 
     elif command == "new":
         title = input("title: ")
-        body = input("notes: ")
+        body = read_multi_line("notes: ")
         if title == "":
             title = " ". join(body.split()[:3])
         note = Note(title, body)
@@ -67,11 +77,11 @@ while True:
             print(f"Last edited: {note_to_show.last_edited}")
         else:
             print(f"No note found with title '{title}'.")
-    elif command == "edit":
+    elif command == "append":
         title = input("title: ")
         note_found = next((note for note in my_notes if note.title == title), None)
         if note_found:
-            new_text = input("text to append: ")
+            new_text = read_multi_line("text to append: ")
             updated_note = append_note_body(note_found, new_text)
             my_notes = update_note(my_notes, note_found, updated_note)
             print(f"Note '{title}' updated.")  
