@@ -11,7 +11,7 @@ my_notes = load(Notes_file)
 while True: 
     command = input("command: ")
     if command == "quit":
-        save(my_notes, "notes.json")
+        save(my_notes, Notes_file)
         break 
     elif command == "new":
         title = input("title: ")
@@ -43,7 +43,7 @@ while True:
             new_title = input("new title: ")
             if new_title == "":
                 new_title = update_this.title
-            new_body = append_note_body(update_this, input("new body: "))
+            new_body = input("new body: ")
             if new_body == "":
                 new_body = update_this.body
             new_note = Note(new_title, new_body, update_this.tags)
@@ -58,11 +58,32 @@ while True:
         elif sorted_input == "date" or sorted_input == "last_edited":
             my_notes = sort_notes(my_notes, "last_edited")
     elif command == "show":
+        title = input("title: ")
+        note_to_show = next((note for note in my_notes if note.title == title), None)
+        if note_to_show:
+            print(f"Title: {note_to_show.title}")
+            print(f"Body: {note_to_show.body}")
+            print(f"Tags: {note_to_show.tags}")
+            print(f"Last edited: {note_to_show.last_edited}")
+        else:
+            print(f"No note found with title '{title}'.")
+    elif command == "edit":
+        title = input("title: ")
+        note_found = next((note for note in my_notes if note.title == title), None)
+        if note_found:
+            new_text = input("text to append: ")
+            updated_note = append_note_body(note_found, new_text)
+            my_notes = update_note(my_notes, note_found, updated_note)
+            print(f"Note '{title}' updated.")  
+        else:
+            print(f"No note found with title '{title}'.")
+    elif command == "list":
         for note in my_notes:
             print(f"Title: {note.title}")
-            print(f"Body: {note.body}")
-            print(f"Tags: {note.tags}")
-            print(f"Last edited: {note.last_edited}")
+            print(f"Last edited: {note.last_edited}")   
+    
+
+
 
     
 

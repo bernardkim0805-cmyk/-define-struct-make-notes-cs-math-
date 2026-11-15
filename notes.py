@@ -50,5 +50,4 @@ def add_tag(note: Note, tag: str) -> Note:
         note.tags.append(tag)
 
 def append_note_body(note: Note, text: str) -> Note:
-    note.body += text
-    return note
+    return Note(note.title, note.body + "/n" + text, note.tags, note.last_edited)
