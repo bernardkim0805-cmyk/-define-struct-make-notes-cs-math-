@@ -19,7 +19,6 @@ Planned
  Multi-line note input
  Auto-save after every change
  Graphical interface
- Standalone app (no Python install required)
 Running it
 
 Requires Python 3.10 or newer.
