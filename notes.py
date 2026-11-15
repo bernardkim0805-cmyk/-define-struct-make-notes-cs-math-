@@ -48,3 +48,7 @@ def create_notebook() -> list[Note]:
 def add_tag(note: Note, tag: str) -> Note: 
     if tag not in note.tags: 
         note.tags.append(tag)
+
+def append_note_body(note: Note, text: str) -> Note:
+    note.body += text
+    return note

@@ -1,9 +1,13 @@
 from notes import *
 from storage import load, save
+from pathlib import Path
 
 # interface 
 
-my_notes = load("notes.json")
+Notes_file = Path.home() / "MathCSnotes" / "notes.json"
+Notes_file.parent.mkdir(exist_ok=True)
+my_notes = load(Notes_file)
+
 while True: 
     command = input("command: ")
     if command == "quit":
@@ -39,7 +43,7 @@ while True:
             new_title = input("new title: ")
             if new_title == "":
                 new_title = update_this.title
-            new_body = input("new body: ")
+            new_body = append_note_body(update_this, input("new body: "))
             if new_body == "":
                 new_body = update_this.body
             new_note = Note(new_title, new_body, update_this.tags)
@@ -53,6 +57,14 @@ while True:
             my_notes = sort_notes(my_notes, "title")
         elif sorted_input == "date" or sorted_input == "last_edited":
             my_notes = sort_notes(my_notes, "last_edited")
+    elif command == "show":
+        for note in my_notes:
+            print(f"Title: {note.title}")
+            print(f"Body: {note.body}")
+            print(f"Tags: {note.tags}")
+            print(f"Last edited: {note.last_edited}")
+
+    
 
         
 
