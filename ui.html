@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+</head>
+<body>
+    <h1>MathCSNotes</h1>
+    <p>Welcome to MathCSNotes! This is a simple note-taking application for math and computer science notes.</p>
+    <div id="mathlatex"></div>
+    <button onclick="showNotes()">Show Notes</button>
+    <div id="list"></div>
+    <script>
+     katex.render ("\\sum_{i=1}^n i = \\frac{n(n+1)}{2}", document.getElementById("mathlatex"));
+     
+     async function showNotes() {
+        const notes = await pywebview.api.get_notes();
+        const box = document.getElementById("list");
+        box.innerHTML = "";
+        for (const note of notes) {
+            const p = document.createElement("p");
+            p.textContent = note.title;
+            box.appendChild(p);
+        }
+    }
+    </script>
+</body>
+</html>
