@@ -11,6 +11,7 @@
     <div id="mathlatex"></div>
     <button onclick="showNotes()">Show Notes</button>
     <div id="list"></div>
+    <div id="note-view" style="white-space: pre-wrap;"></div>
     <script>
      katex.render ("\\sum_{i=1}^n i = \\frac{n(n+1)}{2}", document.getElementById("mathlatex"));
      
@@ -21,9 +22,31 @@
         for (const note of notes) {
             const p = document.createElement("p");
             p.textContent = note.title;
+            p.onclick = () => showNote(note);
+            p.style.cursor = "pointer";
             box.appendChild(p);
         }
-    }
+     }
+
+     function showNote(note) {
+        const view = document.getElementById("note-view");
+        view.innerHTML = "";
+
+        const title = document.createElement("h2");
+        title.textContent = note.title;
+        view.appendChild(title);
+
+        const body = document.createElement("div");
+        body.textContent = note.body;
+        view.appendChild(body);
+
+        renderMathInElement(view, {
+            delimiters: [
+                {left: "$$", right: "$$", display: true},
+                {left: "$", right: "$", display: false}
+            ]
+        });
+     }
     </script>
 </body>
 </html>
