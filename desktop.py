@@ -1,7 +1,7 @@
 import webview
 from pathlib import Path
 from storage import load, note_to_dict, save 
-from Notes import Note, add_note, find_note, delete_note, update_note
+from notes import Note, add_note, find_note, delete_note, update_note
 
 
 NOTES_FILE = Path.home() / "MathCSnotes" / "notes.json"
@@ -30,4 +30,4 @@ class Api:
 page = Path(__file__).parent / "ui.html"
 
 webview.create_window("Math/CS Notes", url=str(page), js_api=Api())
-webview.start(debug=True)
+webview.start()

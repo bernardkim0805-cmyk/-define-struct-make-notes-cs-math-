@@ -59,16 +59,20 @@
         const body = document.getElementById("new-body").value;
         if (body.trim() === "") {
             return;
-        }"
+        }
 
-        await pywebview.api.save_note(title, body);
-     }
+        await pywebview.api.create_note(title, body);
+        
+        document.getElementById("new-title").value = "";
+        document.getElementById("new-body").value = "";
 
-     document.getElementById("new-title").value = "";
-     document.getElementById("new-body").value = "";
+     showNotes();
 
-    showNotes();
-     "
+    }
+
+    
+
+
     </script>
 </body>
 </html>
