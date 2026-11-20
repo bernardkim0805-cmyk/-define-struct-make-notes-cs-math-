@@ -12,6 +12,12 @@
     <button onclick="showNotes()">Show Notes</button>
     <div id="list"></div>
     <div id="note-view" style="white-space: pre-wrap;"></div>
+    <h2> New Note  </h2>
+    <input id = "new-title" placeholder = "Title (optional)">
+    <br>
+    <textarea id = "new-body" placeholder = "Body"></textarea>
+    <br>
+    <button onclick = "saveNote()">Save Note</button>
     <script>
      katex.render ("\\sum_{i=1}^n i = \\frac{n(n+1)}{2}", document.getElementById("mathlatex"));
      
@@ -47,6 +53,22 @@
             ]
         });
      }
+
+     async function saveNote() {
+        const title = document.getElementById("new-title").value;
+        const body = document.getElementById("new-body").value;
+        if (body.trim() === "") {
+            return;
+        }"
+
+        await pywebview.api.save_note(title, body);
+     }
+
+     document.getElementById("new-title").value = "";
+     document.getElementById("new-body").value = "";
+
+    showNotes();
+     "
     </script>
 </body>
 </html>
