@@ -5,10 +5,18 @@ from notes import Note, add_note, find_note, delete_note, update_note
 
 
 NOTES_FILE = Path.home() / "MathCSnotes" / "notes.json"
+NOTES_FILE.parent.mkdir(exist_ok=True)
+
 
 class Api:
     def get_notes(self):
         return [note_to_dict(note) for note in load(NOTES_FILE)]
+
+    def create_blank(self):
+        note = load(NOTES_FILE)
+        note = add_note(note, Note("New Note", ""))
+        save(note, NOTES_FILE)
+        return len(note) - 1  # return the index 
 
     def create_note(self, title, body):
         note = load(NOTES_FILE)
