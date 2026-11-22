@@ -6,7 +6,22 @@
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 </head>
 <body>
-    <h1>MathCSNotes</h1>
+    <header>
+        <h1>MathCSNotes</h1>
+    </header> 
+    <div class = "layout">
+        <aside id = "sidebar">
+            <h3>Notes</h3>
+            <button onclick="showNotes()">Show Notes</button>
+        </aside>
+
+        <main>
+            <div class="page">
+                <div id="note-view" 
+            </div>
+        </main>
+
+
     <p>Welcome to MathCSNotes! This is a simple note-taking application for math and computer science notes.</p>
     <div id="mathlatex"></div>
     <button onclick="showNotes()">Show Notes</button>
