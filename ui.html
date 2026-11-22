@@ -13,26 +13,28 @@
         <aside id = "sidebar">
             <h3>Notes</h3>
             <button onclick="showNotes()">Show Notes</button>
+            <div id="list"></div>
         </aside>
 
         <main>
+            <p>Welcome to MathCSNotes! This is a simple note-taking application for math and computer science notes.</p>
+            <div id="mathlatex"></div>
+
             <div class="page">
-                <div id="note-view" 
+                <div id="note-view" style="white-space: pre-wrap;"></div>
+            </div>
+
+            <div class = "page">
+                <h2> New Note </h2>
+                <input id = "new-title" placeholder = "Title (optional)">
+                <br>
+                <textarea id = "new-body" rows = "10" columns = "60" placeholder = "Note body"></textarea>
+                <br>
+                <button onclick = "saveNote()">Save Note</button>
             </div>
         </main>
+    </div>
 
-
-    <p>Welcome to MathCSNotes! This is a simple note-taking application for math and computer science notes.</p>
-    <div id="mathlatex"></div>
-    <button onclick="showNotes()">Show Notes</button>
-    <div id="list"></div>
-    <div id="note-view" style="white-space: pre-wrap;"></div>
-    <h2> New Note  </h2>
-    <input id = "new-title" placeholder = "Title (optional)">
-    <br>
-    <textarea id = "new-body" placeholder = "Body"></textarea>
-    <br>
-    <button onclick = "saveNote()">Save Note</button>
     <script>
      katex.render ("\\sum_{i=1}^n i = \\frac{n(n+1)}{2}", document.getElementById("mathlatex"));
      
