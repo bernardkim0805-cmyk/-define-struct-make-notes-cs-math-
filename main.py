@@ -1,6 +1,28 @@
-from notes import *
-from storage import load, save
-from pathlib import Path
+"""The terminal interface."""
+
+from notes import (
+    Note, SORT_KEYS, add_note, add_tag, append_note_body, delete_note,
+    edit_note, extract_code, find_by_title, find_note, remove_tag,
+    sort_notes, title_from_body, update_note,
+)
+from runner import run_code
+from storage import NOTES_FILE, load, save
+
+COMMANDS = {
+    "new": "create a note",
+    "list": "list all note titles",
+    "show": "show one note",
+    "search": "find notes containing a keyword",
+    "update": "change a note's title or body",
+    "append": "add text to the end of a note",
+    "tag": "add or remove a tag",
+    "delete": "delete a note",
+    "sort": "sort notes by title or date",
+    "run": "run the code blocks in a note",
+    "help": "show this list",
+    "quit": "save and exit",
+}
+
 
 def read_multi_line(prompt: str) -> str:
     print(prompt + " (end with a line containing only .)")
@@ -12,105 +34,132 @@ def read_multi_line(prompt: str) -> str:
         lines.append(line)
     return "\n".join(lines)
 
-# interface 
 
-Notes_file = Path.home() / "MathCSnotes" / "notes.json"
-Notes_file.parent.mkdir(exist_ok=True)
-my_notes = load(Notes_file)
+def print_note(note: Note, show_body: bool = True) -> None:
+    print(f"Title: {note.title}")
+    if show_body:
+        print(f"Body: {note.body}")
+        print(f"Tags: {', '.join(note.tags) if note.tags else '(none)'}")
+    print(f"Last edited: {note.last_edited}")
+    print()
 
-while True: 
-    command = input("command: ")
-    if command == "quit":
-        save(my_notes, Notes_file)
-        break 
-    elif command == "new":
-        title = input("title: ")
-        body = read_multi_line("notes: ")
-        if title == "":
-            title = " ". join(body.split()[:3])
-        note = Note(title, body)
-        my_notes = add_note(my_notes, note)
-    elif command == "search":
-        text = input("keywords: ")
-        results = find_note(my_notes, text)
-        for note in results:
-            print(f"Title: {note.title}")
-            print(f"Body: {note.body}")
-            print(f"Tags: {note.tags}")
-            print(f"Last edited: {note.last_edited}")
-    elif command == "delete":
-        title = input("title: ")
-        note_to_delete = next((note for note in my_notes if note.title == title), None)
-        if note_to_delete:
-            my_notes = delete_note(my_notes, note_to_delete)
-            print(f"Note '{title}' deleted.")
+
+def print_help() -> None:
+    print("Commands:")
+    for name, what in COMMANDS.items():
+        print(f"  {name:<8} {what}")
+
+
+def ask_for_note(my_notes: list[Note]) -> Note | None:
+    """Ask for a title; print a message and return None if there's no such note."""
+    title = input("title: ")
+    note = find_by_title(my_notes, title)
+    if note is None:
+        print(f"No note found with title '{title}'.")
+    return note
+
+
+def main() -> None:
+    my_notes = load(NOTES_FILE)
+    print("MathCSNotes. Type 'help' to see the commands.")
+
+    while True:
+        command = input("command: ").strip().lower()
+
+        if command == "quit":
+            save(my_notes, NOTES_FILE)
+            break
+
+        elif command == "help":
+            print_help()
+
+        elif command == "new":
+            title = input("title: ")
+            body = read_multi_line("notes:")
+            if title == "":
+                title = title_from_body(body)
+            my_notes = add_note(my_notes, Note(title, body))
+            print(f"Note '{title}' created.")
+
+        elif command == "list":
+            if not my_notes:
+                print("No notes yet.")
+            for note in my_notes:
+                print_note(note, show_body=False)
+
+        elif command == "show":
+            note = ask_for_note(my_notes)
+            if note:
+                print_note(note)
+
+        elif command == "search":
+            results = find_note(my_notes, input("keywords: "))
+            if not results:
+                print("No matches.")
+            for note in results:
+                print_note(note)
+
+        elif command == "update":
+            note = ask_for_note(my_notes)
+            if note:
+                new_title = input("new title (Enter to keep): ")
+                new_body = read_multi_line("new body (just . to keep):")
+                updated = edit_note(note, title=new_title or None, body=new_body or None)
+                my_notes = update_note(my_notes, note, updated)
+                print(f"Note '{updated.title}' updated.")
+
+        elif command == "append":
+            note = ask_for_note(my_notes)
+            if note:
+                new_text = read_multi_line("text to append:")
+                my_notes = update_note(my_notes, note, append_note_body(note, new_text))
+                print(f"Note '{note.title}' updated.")
+
+        elif command == "tag":
+            note = ask_for_note(my_notes)
+            if note:
+                action = input("add or remove? ").strip().lower()
+                tag = input("tag: ")
+                if action == "add":
+                    my_notes = update_note(my_notes, note, add_tag(note, tag))
+                    print(f"Tag '{tag}' added.")
+                elif action == "remove":
+                    my_notes = update_note(my_notes, note, remove_tag(note, tag))
+                    print(f"Tag '{tag}' removed.")
+                else:
+                    print(f"Unknown action '{action}'. Type add or remove.")
+
+        elif command == "delete":
+            note = ask_for_note(my_notes)
+            if note:
+                my_notes = delete_note(my_notes, note)
+                print(f"Note '{note.title}' deleted.")
+
+        elif command == "sort":
+            key = input(f"sort by ({', '.join(SORT_KEYS)}): ").strip().lower()
+            if key in SORT_KEYS:
+                my_notes = sort_notes(my_notes, key)
+                print(f"Sorted by {key}.")
+            else:
+                print(f"Can't sort by '{key}'. Choose one of: {', '.join(SORT_KEYS)}.")
+
+        elif command == "run":
+            note = ask_for_note(my_notes)
+            if note:
+                blocks = extract_code(note.body)
+                if not blocks:
+                    print("This note has no code blocks (see /start_python ... /end_python).")
+                for number, (language, code) in enumerate(blocks, start=1):
+                    print(f"--- block {number} ({language}) ---")
+                    print(run_code(language, code))
+
+        elif command == "":
+            continue
+
         else:
-            print(f"No note found with title '{title}'.")
-    elif command == "update":
-        title = input("title: ")
-        update_this = next((note for note in my_notes if note.title == title), None)
-        if update_this:
-            new_title = input("new title: ")
-            if new_title == "":
-                new_title = update_this.title
-            new_body = input("new body: ")
-            if new_body == "":
-                new_body = update_this.body
-            new_note = Note(new_title, new_body, update_this.tags)
-            my_notes = update_note(my_notes, update_this, new_note)
-            print(f"Note '{title}' updated.")
-        else:
-            print(f"No note found with title '{title}'.")
-    elif command == "sort":
-        sorted_input = input("sort by ...")
-        if sorted_input == "title":
-            my_notes = sort_notes(my_notes, "title")
-        elif sorted_input == "date" or sorted_input == "last_edited":
-            my_notes = sort_notes(my_notes, "last_edited")
-    elif command == "show":
-        title = input("title: ")
-        note_to_show = next((note for note in my_notes if note.title == title), None)
-        if note_to_show:
-            print(f"Title: {note_to_show.title}")
-            print(f"Body: {note_to_show.body}")
-            print(f"Tags: {note_to_show.tags}")
-            print(f"Last edited: {note_to_show.last_edited}")
-        else:
-            print(f"No note found with title '{title}'.")
-    elif command == "append":
-        title = input("title: ")
-        note_found = next((note for note in my_notes if note.title == title), None)
-        if note_found:
-            new_text = read_multi_line("text to append: ")
-            updated_note = append_note_body(note_found, new_text)
-            my_notes = update_note(my_notes, note_found, updated_note)
-            print(f"Note '{title}' updated.")  
-        else:
-            print(f"No note found with title '{title}'.")
-    elif command == "list":
-        for note in my_notes:
-            print(f"Title: {note.title}")
-            print(f"Last edited: {note.last_edited}")   
-    
+            print(f"Unknown command '{command}'.")
+            print_help()
 
 
-
-    
-
-        
-
-        
-        
-        
-            
-
-
-        
-        
-            
-
-
-
-
-    
-
+if __name__ == "__main__":
+    main()

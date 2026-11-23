@@ -1,41 +1,73 @@
-import webview
+"""The desktop interface: a window showing ui.html, talking to Python via Api."""
+
+import sys
 from pathlib import Path
-from storage import load, note_to_dict, save 
-from notes import Note, add_note, find_note, delete_note, update_note
+
+from notes import (
+    Note, add_note, delete_note, extract_code, find_by_id, find_note,
+    set_tags, title_from_body, update_note,
+)
+from runner import run_code
+from storage import NOTES_FILE, load, note_to_dict, save
 
 
-NOTES_FILE = Path.home() / "MathCSnotes" / "notes.json"
-NOTES_FILE.parent.mkdir(exist_ok=True)
+def resource_path(name: str) -> Path:
+    """Where bundled files live. PyInstaller unpacks them into sys._MEIPASS."""
+    base = Path(getattr(sys, "_MEIPASS", Path(__file__).parent))
+    return base / name
 
 
 class Api:
-    def get_notes(self):
-        return [note_to_dict(note) for note in load(NOTES_FILE)]
+    """Every public method here can be called from JavaScript as
+    pywebview.api.<method>(...). Notes are identified by their id."""
 
-    def create_blank(self):
-        note = load(NOTES_FILE)
-        note = add_note(note, Note("New Note", ""))
-        save(note, NOTES_FILE)
-        return len(note) - 1  # return the index 
+    def __init__(self, path: Path = NOTES_FILE):
+        self.path = path
 
-    def create_note(self, title, body):
-        note = load(NOTES_FILE)
-        note = add_note(note, Note(title, body))
-        save(note, NOTES_FILE)
+    def get_notes(self) -> list[dict]:
+        return [note_to_dict(note) for note in load(self.path)]
 
-    def delete(self, title):
-        notes = load(NOTES_FILE)
-        note_to_del = (next((note for note in notes if note.title == title), None))
-        if note_to_del:
-            notes = delete_note(notes, note_to_del)
-            save(notes, NOTES_FILE)
+    def search(self, text: str) -> list[dict]:
+        return [note_to_dict(note) for note in find_note(load(self.path), text)]
 
-    def search(self, text):
-        nb = load(NOTES_FILE)
-        results = find_note(nb, text)
-        return [note_to_dict(note) for note in results]
+    def create_note(self, title: str, body: str) -> dict:
+        note = Note(title.strip() or title_from_body(body), body)
+        save(add_note(load(self.path), note), self.path)
+        return note_to_dict(note)
 
-page = Path(__file__).parent / "ui.html"
+    def delete_note(self, note_id: str) -> bool:
+        notes = load(self.path)
+        note = find_by_id(notes, note_id)
+        if note is None:
+            return False
+        save(delete_note(notes, note), self.path)
+        return True
 
-webview.create_window("Math/CS Notes", url=str(page), js_api=Api())
-webview.start()
+    def set_tags(self, note_id: str, tags: list[str]) -> dict | None:
+        notes = load(self.path)
+        note = find_by_id(notes, note_id)
+        if note is None:
+            return None
+        updated = set_tags(note, tags)
+        save(update_note(notes, note, updated), self.path)
+        return note_to_dict(updated)
+
+    def run_code(self, note_id: str) -> list[dict]:
+        note = find_by_id(load(self.path), note_id)
+        if note is None:
+            return []
+        return [
+            {"language": language, "code": code, "output": run_code(language, code)}
+            for language, code in extract_code(note.body)
+        ]
+
+
+def main() -> None:
+    import webview  # imported here so tests can use Api without pywebview
+
+    webview.create_window("Math/CS Notes", url=str(resource_path("ui.html")), js_api=Api())
+    webview.start()
+
+
+if __name__ == "__main__":
+    main()
