@@ -17,6 +17,7 @@ It's safe to delete that file: sync_embeddings rebuilds it.
 import hashlib
 import json
 import os
+import threading
 from collections.abc import Callable
 from pathlib import Path
 
@@ -29,16 +30,26 @@ MODEL_NAME = "all-MiniLM-L6-v2"
 EMBEDDINGS_FILE = APP_DIR / "embeddings.json"
 
 _model = None  # loaded the first time it's needed, then reused
+_model_lock = threading.Lock()  # so two threads can't both load it
 
 
 def get_model():
     """Load the model once. Loading takes a few seconds, so we only pay that
-    when something actually needs embedding."""
+    when something actually needs embedding (or warm_up asks for it).
+
+    It runs on the CPU: for one short query at a time that's faster and
+    steadier than the Mac GPU ("mps"), which sometimes stalls on new queries."""
     global _model
-    if _model is None:
-        from sentence_transformers import SentenceTransformer  # slow import
-        _model = SentenceTransformer(MODEL_NAME)
+    with _model_lock:
+        if _model is None:
+            from sentence_transformers import SentenceTransformer  # slow import
+            _model = SentenceTransformer(MODEL_NAME, device="cpu")
     return _model
+
+
+def warm_up() -> None:
+    """Load the model and run it once, so the first real search is fast."""
+    embed_text("warm up")
 
 
 def embed_text(text: str) -> np.ndarray:

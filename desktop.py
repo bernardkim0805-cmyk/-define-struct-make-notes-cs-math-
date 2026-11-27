@@ -7,7 +7,7 @@ from notes import (
     Note, add_note, delete_note, extract_code, find_by_id, find_note,
     set_tags, title_from_body, update_note,
 )
-from embeddings import EMBEDDINGS_FILE, embed_text, load_vectors, sync_embeddings
+from embeddings import EMBEDDINGS_FILE, embed_text, load_vectors, sync_embeddings, warm_up
 from runner import run_code
 from similarity import closest
 from storage import NOTES_FILE, load, note_to_dict, save
@@ -96,7 +96,12 @@ class Api:
 
 
 def main() -> None:
+    import threading
     import webview  # imported here so tests can use Api without pywebview
+
+    # Load the model in the background while the window opens, so the first
+    # search by meaning doesn't wait ~8 seconds for it.
+    threading.Thread(target=warm_up, daemon=True).start()
 
     # Embed any notes that don't have a vector yet (only slow the first time).
     sync_embeddings(load(NOTES_FILE))
