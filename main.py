@@ -5,6 +5,7 @@ from notes import (
     edit_note, extract_code, find_by_title, find_note, remove_tag,
     sort_notes, title_from_body, update_note,
 )
+from embeddings import sync_embeddings
 from runner import run_code
 from storage import NOTES_FILE, load, save
 
@@ -68,6 +69,7 @@ def main() -> None:
 
         if command == "quit":
             save(my_notes, NOTES_FILE)
+            sync_embeddings(my_notes)
             break
 
         elif command == "help":

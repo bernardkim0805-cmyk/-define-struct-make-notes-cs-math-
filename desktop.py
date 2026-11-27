@@ -7,6 +7,7 @@ from notes import (
     Note, add_note, delete_note, extract_code, find_by_id, find_note,
     set_tags, title_from_body, update_note,
 )
+from embeddings import EMBEDDINGS_FILE, sync_embeddings
 from runner import run_code
 from storage import NOTES_FILE, load, note_to_dict, save
 
@@ -21,8 +22,14 @@ class Api:
     """Every public method here can be called from JavaScript as
     pywebview.api.<method>(...). Notes are identified by their id."""
 
-    def __init__(self, path: Path = NOTES_FILE):
+    def __init__(self, path: Path = NOTES_FILE, embeddings_path: Path = EMBEDDINGS_FILE):
         self.path = path
+        self.embeddings_path = embeddings_path
+
+    def _save(self, notes: list[Note]) -> None:
+        """Save the notes, then bring their embeddings up to date."""
+        save(notes, self.path)
+        sync_embeddings(notes, self.embeddings_path)
 
     def get_notes(self) -> list[dict]:
         return [note_to_dict(note) for note in load(self.path)]
@@ -32,7 +39,7 @@ class Api:
 
     def create_note(self, title: str, body: str) -> dict:
         note = Note(title.strip() or title_from_body(body), body)
-        save(add_note(load(self.path), note), self.path)
+        self._save(add_note(load(self.path), note))
         return note_to_dict(note)
 
     def delete_note(self, note_id: str) -> bool:
@@ -40,7 +47,7 @@ class Api:
         note = find_by_id(notes, note_id)
         if note is None:
             return False
-        save(delete_note(notes, note), self.path)
+        self._save(delete_note(notes, note))
         return True
 
     def set_tags(self, note_id: str, tags: list[str]) -> dict | None:
@@ -49,7 +56,7 @@ class Api:
         if note is None:
             return None
         updated = set_tags(note, tags)
-        save(update_note(notes, note, updated), self.path)
+        self._save(update_note(notes, note, updated))
         return note_to_dict(updated)
 
     def run_code(self, note_id: str) -> list[dict]:
@@ -65,6 +72,8 @@ class Api:
 def main() -> None:
     import webview  # imported here so tests can use Api without pywebview
 
+    # Embed any notes that don't have a vector yet (only slow the first time).
+    sync_embeddings(load(NOTES_FILE))
     webview.create_window("Math/CS Notes", url=str(resource_path("ui.html")), js_api=Api())
     webview.start()
 
