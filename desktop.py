@@ -7,8 +7,9 @@ from notes import (
     Note, add_note, delete_note, extract_code, find_by_id, find_note,
     set_tags, title_from_body, update_note,
 )
-from embeddings import EMBEDDINGS_FILE, sync_embeddings
+from embeddings import EMBEDDINGS_FILE, embed_text, load_vectors, sync_embeddings
 from runner import run_code
+from similarity import closest
 from storage import NOTES_FILE, load, note_to_dict, save
 
 
@@ -22,14 +23,39 @@ class Api:
     """Every public method here can be called from JavaScript as
     pywebview.api.<method>(...). Notes are identified by their id."""
 
-    def __init__(self, path: Path = NOTES_FILE, embeddings_path: Path = EMBEDDINGS_FILE):
+    def __init__(self, path: Path = NOTES_FILE, embeddings_path: Path = EMBEDDINGS_FILE,
+                 embed=embed_text):
         self.path = path
         self.embeddings_path = embeddings_path
+        self.embed = embed  # tests pass a fake so they don't load the real model
 
     def _save(self, notes: list[Note]) -> None:
-        """Save the notes, then bring their embeddings up to date."""
+        """Save the notes, then embed any that are new or changed."""
         save(notes, self.path)
-        sync_embeddings(notes, self.embeddings_path)
+        sync_embeddings(notes, self.embeddings_path, self.embed)
+
+    def _ranked(self, target, vectors: dict, k: int) -> list[dict]:
+        """The k notes whose vectors are closest to target, best first.
+        closest() returns positions in a list, so keep the ids in a list
+        in the same order to turn positions back into notes."""
+        ids = list(vectors)
+        notes = load(self.path)
+        found = (find_by_id(notes, ids[i]) for i in closest(target, [vectors[x] for x in ids], k))
+        return [note_to_dict(note) for note in found if note is not None]
+
+    def search_notes(self, text: str, k: int = 5) -> list[dict]:
+        """Search by meaning: notes whose embeddings are closest to the query's."""
+        if not text.strip():
+            return []
+        return self._ranked(self.embed(text), load_vectors(self.embeddings_path), k)
+
+    def related_notes(self, note_id: str, k: int = 5) -> list[dict]:
+        """Notes closest in meaning to this one, not counting itself."""
+        vectors = load_vectors(self.embeddings_path)
+        target = vectors.pop(note_id, None)  # drop itself: it would always score 1.0
+        if target is None:
+            return []
+        return self._ranked(target, vectors, k)
 
     def get_notes(self) -> list[dict]:
         return [note_to_dict(note) for note in load(self.path)]

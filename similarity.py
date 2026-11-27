@@ -1,45 +1,28 @@
 """Similarity and ranking for semantic search and related notes.
 
-TODO(you): write both functions below. Nothing calls them yet, so the app
-keeps working while they're unfinished.
+cosine and closest were written (and tried out) in play.py, and are used
+here exactly as written there.
 
-How they'll be used (step 6, once these work):
-    search:  top_k(embed_text("what you typed"), load_vectors())
-    related: top_k(vectors[open_note_id], vectors)   <- same function!
+How they're used (see desktop.Api):
+    search:  closest(embed_text("what you typed"), vectors, k)
+    related: closest(vector_of_open_note, other_vectors, k)   <- same function!
+
+closest works on a plain list of vectors and returns positions in that list,
+so callers keep a matching list of note ids to turn positions back into notes.
 """
 
 import numpy as np
 
 
-def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
-    """How closely two vectors point the same way.
-
-        cos(theta) = (a . b) / (|a| |b|)
-
-    1.0 = same direction (same meaning), 0.0 = unrelated, -1.0 = opposite.
-
-    Things to think about:
-    - Which NumPy functions give a dot product and a vector's length?
-    - What should happen if one vector is all zeros?
-    """
-    # TODO: your code here
-    raise NotImplementedError("cosine_similarity: your turn!")
+def cosine(u, v):
+    cosine_similarity = np.dot(u,v)/(np.linalg.norm(u) * np.linalg.norm(v))
+    return cosine_similarity
 
 
-def top_k(
-    target: np.ndarray,
-    vectors: dict[str, np.ndarray],
-    k: int = 5,
-) -> list[tuple[str, float]]:
-    """Score every vector against target and keep the k best.
+def closest(target, vectors, k):
+    score_vector = []
+    for i,x in enumerate(vectors):
+        score_vector.append((cosine(target, x), i))
 
-    vectors maps note id -> vector (from embeddings.load_vectors()).
-    Returns [(note_id, score), ...], highest score first, at most k items.
-
-    Things to think about:
-    - What if there are fewer than k notes?
-    - For related notes, the open note scores 1.0 against itself.
-      Where should it get left out: here, or in the caller?
-    """
-    # TODO: your code here
-    raise NotImplementedError("top_k: your turn!")
+    desired = sorted(score_vector, reverse=True)[:k]
+    return [i for score, i in desired]
